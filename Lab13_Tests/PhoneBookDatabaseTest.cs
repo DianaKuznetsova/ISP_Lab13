@@ -1,10 +1,9 @@
-using System;
-using System.IO;
-using System.Data.SqlClient;
-using Xunit;
 using ISP_Lab13;
-using System.Data;
 using System.Collections.Generic;
+using System.Data;
+using System.Data.SqlClient;
+using System.IO;
+using Xunit;
 
 namespace Lab13_Tests
 {
@@ -87,9 +86,43 @@ namespace Lab13_Tests
                 userIds.Add(reader.GetInt32(0));
             }
 
+            reader.Close();
+
             Assert.Equal(2, userIds.Count);
 
             Assert.NotEqual(userIds[0], userIds[1]);
+
+            db.CloseConnection();
+            db.DeleteDatabase();
+        }
+
+        [Fact]
+        public void CheckUserDeleted()
+        {
+            string pathToDb = Path.GetFullPath("test_db.mdf");
+            PhoneBookDatebase db = new PhoneBookDatebase(pathToDb);
+            db.InitializeDatabase();
+
+            db.OpenConnection();
+
+            Assert.Equal(1, db.AddUser("Vasia", "Ivanov", "03.12.2012"));
+            Assert.Equal(1, db.AddPhoneNumber("1", "+375259002315"));
+
+            Assert.Equal(1, db.DeleteUser("Vasia"));
+
+            SqlCommand getUsersCommand = new SqlCommand("SELECT * FROM Users", db.DatabaseConnection);
+            SqlDataReader getUsersReader = getUsersCommand.ExecuteReader();
+
+            Assert.False(getUsersReader.HasRows);
+
+            getUsersReader.Close();
+
+            SqlCommand getPhoneNumbersCommand = new SqlCommand("SELECT * FROM PhoneNumbers", db.DatabaseConnection);
+            SqlDataReader getPhoneNumbersReader = getPhoneNumbersCommand.ExecuteReader();
+
+            Assert.False(getPhoneNumbersReader.HasRows);
+
+            getPhoneNumbersReader.Close();
 
             db.CloseConnection();
             db.DeleteDatabase();
