@@ -40,12 +40,13 @@ namespace Lab13_Tests
             DataTable columns = db.DatabaseConnection.GetSchema("Columns");
             foreach (DataRow column in columns.Rows)
             {
-                string tableName = (string) column["TABLE_NAME"];
-                string columnName = (string) column["COLUMN_NAME"];
+                string tableName = (string)column["TABLE_NAME"];
+                string columnName = (string)column["COLUMN_NAME"];
                 if (tableName.Equals("Users"))
                 {
                     usersColumns.Add(columnName);
-                } else if (tableName.Equals("PhoneNumbers"))
+                }
+                else if (tableName.Equals("PhoneNumbers"))
                 {
                     phoneNumbersColumns.Add(columnName);
                 }
@@ -59,6 +60,36 @@ namespace Lab13_Tests
             Assert.Contains("Id", phoneNumbersColumns);
             Assert.Contains("UserId", phoneNumbersColumns);
             Assert.Contains("Number", phoneNumbersColumns);
+
+            db.CloseConnection();
+            db.DeleteDatabase();
+        }
+
+        [Fact]
+        public void CheckUserIdGenerated()
+        {
+            string pathToDb = Path.GetFullPath("test_db.mdf");
+            PhoneBookDatebase db = new PhoneBookDatebase(pathToDb);
+            db.InitializeDatabase();
+
+            db.OpenConnection();
+
+            Assert.Equal(1, db.AddUser("Vasia", "Ivanov", "03.12.2012"));
+            Assert.Equal(1, db.AddUser("Petia", "Petrov", "08.07.2000"));
+
+            SqlCommand getUserIdsCommand = new SqlCommand("SELECT Id FROM Users", db.DatabaseConnection);
+
+            SqlDataReader reader = getUserIdsCommand.ExecuteReader();
+            List<int> userIds = new List<int>();
+
+            while (reader.Read())
+            {
+                userIds.Add(reader.GetInt32(0));
+            }
+
+            Assert.Equal(2, userIds.Count);
+
+            Assert.NotEqual(userIds[0], userIds[1]);
 
             db.CloseConnection();
             db.DeleteDatabase();
