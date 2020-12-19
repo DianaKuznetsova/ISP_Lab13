@@ -6,6 +6,12 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Lab13_Tests\**" />
+    <EmbeddedResource Remove="Lab13_Tests\**" />
+    <None Remove="Lab13_Tests\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="System.Data.SqlClient" Version="4.8.2" />
   </ItemGroup>
 
