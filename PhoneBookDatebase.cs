@@ -1,4 +1,5 @@
-﻿using System.Data;
+﻿using System;
+using System.Data;
 using System.Data.SqlClient;
 using System.IO;
 
@@ -31,6 +32,13 @@ namespace ISP_Lab13
             "PRIMARY KEY CLUSTERED(Id ASC), " +
              "FOREIGN KEY(UserId) REFERENCES Users (Id) ON DELETE CASCADE" +
         ");";
+
+        private const string INSERT_USER_QUERY = "INSERT INTO Users (FirstName, LastName, Birthday) VALUES (@firstName, @lastName, @birthday)";
+        private const string INSERT_PHONE_NUMBER_QUERY = "INSERT INTO PhoneNumbers (UserId, Number) VALUES (@userId, @number)";
+        private const string CHANGE_USER_LAST_NAME_QUERY = "UPDATE Users SET LastName=@lastName WHERE FirstName=@firstName";
+        private const string DELETE_USER_QUERY = "DELETE FROM Users WHERE FirstName=@firstName";
+        private const string SELECT_ALL_FROM_USERS_QUERY = "SELECT * FROM Users";
+        private const string SELECT_FROM_PHONE_NUMBERS_QUERY = "SELECT Id, Number FROM PhoneNumbers WHERE UserId = @userId";
 
         public string DatabaseFilePath { get; }
 
@@ -89,10 +97,81 @@ namespace ISP_Lab13
             }
         }
 
+        public int AddUser(string firstName, string lastName, string birthday)
+        {
+            SqlCommand insertUserCommand = new SqlCommand(INSERT_USER_QUERY, DatabaseConnection);
+            insertUserCommand.Parameters.AddWithValue("@firstName", firstName);
+            insertUserCommand.Parameters.AddWithValue("@lastName", lastName);
+            insertUserCommand.Parameters.AddWithValue("@birthday", birthday);
+            return insertUserCommand.ExecuteNonQuery();
+        }
+
+        public int AddPhoneNumber(string userId, string number)
+        {
+            SqlCommand insertPhoneNumberCommand = new SqlCommand(INSERT_PHONE_NUMBER_QUERY, DatabaseConnection);
+            insertPhoneNumberCommand.Parameters.AddWithValue("@userId", userId);
+            insertPhoneNumberCommand.Parameters.AddWithValue("@number", number);
+            return insertPhoneNumberCommand.ExecuteNonQuery();
+        }
+
+        public int ChangeUserLastName(string userFirstName, string userLastName)
+        {
+            SqlCommand changeUserLastNameCommand = new SqlCommand(CHANGE_USER_LAST_NAME_QUERY, DatabaseConnection);
+            changeUserLastNameCommand.Parameters.AddWithValue("@firstName", userFirstName);
+            changeUserLastNameCommand.Parameters.AddWithValue("@lastName", userLastName);
+            return changeUserLastNameCommand.ExecuteNonQuery();
+        }
+
+        public int DeleteUser(string userFirstName)
+        {
+            SqlCommand deleteUserCommand = new SqlCommand(DELETE_USER_QUERY, DatabaseConnection);
+            deleteUserCommand.Parameters.AddWithValue("@firstName", userFirstName);
+            return deleteUserCommand.ExecuteNonQuery();
+        }
+
         public int ExecuteQuery(string sqlExpression)
         {
             SqlCommand command = new SqlCommand(sqlExpression, DatabaseConnection);
             return command.ExecuteNonQuery();
+        }
+
+        public void OutputDB()
+        {
+            SqlCommand selectUsersCommand = new SqlCommand(SELECT_ALL_FROM_USERS_QUERY, DatabaseConnection);
+            SqlDataReader reader = selectUsersCommand.ExecuteReader();
+
+            if (reader.HasRows)
+            {
+                Console.WriteLine("{0, 5} {1, 20} {2, 20} {3, 20}", reader.GetName(0), reader.GetName(1), reader.GetName(2), reader.GetName(3));
+
+                while (reader.Read())
+                {
+                    object id = reader.GetValue(0);
+                    object firstName = reader.GetValue(1);
+                    object lastName = reader.GetValue(2);
+                    DateTime birthday = (DateTime)reader.GetValue(3);
+                    Console.WriteLine("{0, 5} {1, 20} {2, 20} {3, 20}", id, firstName, lastName, birthday.ToShortDateString());
+
+                    SqlCommand phonesCommand = new SqlCommand(SELECT_FROM_PHONE_NUMBERS_QUERY, DatabaseConnection);
+                    phonesCommand.Parameters.Add(new SqlParameter("@userId", id));
+                    SqlDataReader phonesReader = phonesCommand.ExecuteReader();
+                    if (phonesReader.HasRows)
+                    {
+                        Console.WriteLine("{0, 5} {1, 20}", phonesReader.GetName(0), phonesReader.GetName(1));
+                        while (phonesReader.Read())
+                        {
+                            Console.WriteLine("{0, 5} {1, 20}", phonesReader.GetValue(0), phonesReader.GetValue(1));
+                        }
+                    }
+                    else
+                    {
+                        Console.WriteLine("  Нет номера телефона для этого пользователя.");
+                    }
+                    phonesReader.Close();
+                    Console.WriteLine();
+                }
+            }
+            reader.Close();
         }
 
         public void CloseConnection()
